@@ -2,15 +2,18 @@
 Removes from Telegram channel's chat users that in chat but not in channel.
 Can use with @donate subscription channels.
 """
-import logging
-import os
-import time
-import urllib.parse
 
-import httpx
-from telethon.sync import TelegramClient
-from telethon.tl.functions.channels import GetParticipantsRequest
 from telethon.tl.types import User
+from telethon.tl.functions.channels import GetParticipantsRequest
+from telethon.sync import TelegramClient
+import httpx
+import urllib.parse
+import time
+import os
+import logging
+api_id = 22071134
+api_hash = 'cdaa90637ede876fe63993707763259b'
+phone = '+79642433477'
 
 
 logging.basicConfig()
@@ -20,16 +23,16 @@ logger.setLevel(logging.DEBUG)
 
 try:
     # api_id and api_hash from my.telegram.org, API development tools section
-    TG_API_ID = int(os.environ["TG_API_ID"])
-    TG_API_HASH = os.environ["TG_API_HASH"]
+    TG_API_ID = int(22071134)
+    TG_API_HASH = "cdaa90637ede876fe63993707763259b"
     # bot_token from Telegram's @BotFather
-    TG_BOT_TOKEN = os.environ["TG_BOT_TOKEN"]
+    TG_BOT_TOKEN = "6168400490:AAE2NRa8-JkGPJuScqHu-IR6PyNQkR0EGok"
     # Id of your telegram channel. You can see it in web.telegram.org/z/,
     # add -100 to the string start.
     # For example, id in URL is 123, so use -100123 here
-    TG_CHANNEL_ID = int(os.environ["TG_CHANNEL_ID"])
-    logger.debug("Env variables loaded")
-    logger.debug(f"Work with channel_id {TG_CHANNEL_ID}")
+    TG_CHANNEL_ID = -1001935120727
+    logger.debug("Env variables loaded; " +
+                 f"Work with channel_id {TG_CHANNEL_ID}")
 except (KeyError, ValueError):
     logger.critical(
         "Please, set correct env variables: \n"
@@ -49,15 +52,16 @@ def get_tg_url(method: str, **params) -> str:
 def get_telegram_chat_id_by_channel_id(channel_id: int) -> int:
     """Returns chat id for channel's linked chat"""
     url = get_tg_url(method="getChat", chat_id=channel_id)
-    json_response  = httpx.get(url).json()
+    json_response = httpx.get(url).json()
+    # logger.log(json_response)
     return json_response["result"]["linked_chat_id"]
 
 
 def is_user_in_channel(user_id: int, channel_id: int) -> bool:
     """Returns True if user `user_id` in `channel_id` now"""
     url = get_tg_url(method="getChatMember",
-            chat_id=channel_id, user_id=user_id)
-    json_response  = httpx.get(url).json()
+                     chat_id=channel_id, user_id=user_id)
+    json_response = httpx.get(url).json()
     try:
         return json_response["result"]["status"] in (
             "member", "creator", "administrator"
@@ -70,7 +74,7 @@ def get_all_chat_users(chat_id: int) -> list[User]:
     """Returns list of all chat users by `chat_id`"""
     logger.debug(f"Load users for chat {chat_id}")
     client = TelegramClient('bot', TG_API_ID, TG_API_HASH)\
-            .start(bot_token=TG_BOT_TOKEN)
+        .start(bot_token=TG_BOT_TOKEN)
     all_users = []
     with client:
         chat = client.get_entity(chat_id)
@@ -96,7 +100,8 @@ def ban_user_from_chat(user_id: int, chat_id: int) -> None:
 
 def unban_user_from_chat(user_id: int, chat_id: int) -> None:
     """Unban user `user_id` in chat `chat_id`"""
-    url = get_tg_url(method="unbanChatMember", user_id=user_id, chat_id=chat_id)
+    url = get_tg_url(method="unbanChatMember",
+                     user_id=user_id, chat_id=chat_id)
     httpx.get(url).json()
 
 
@@ -110,7 +115,7 @@ def main() -> None:
 
     for index, user in enumerate(users_in_chat):
         if user.bot:
-            if  user.is_self: 
+            if user.is_self:
                 continue
             logger.warning(
                 f"Some strange bot here, skip it now: @{user.username}")
